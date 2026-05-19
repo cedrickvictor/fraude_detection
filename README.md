@@ -154,7 +154,7 @@ python3 -m uvicorn main:app --port 9000 --reload
 
 ## Author
 
-Student project
+Student project - Cedric
 Machine Learning + Web development practice
 
 
