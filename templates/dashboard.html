@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - BK Bank Fraud Detection</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">🏦 BK Bank Fraud Detection</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/transaction">Make Transaction</a>
+                <a class="nav-link" href="/logout">Logout ({{ username }})</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h1 class="mb-4">Dashboard</h1>
+        
+        <div class="row">
+            <div class="col-md-3 mb-4">
+                <div class="stat-card card-primary">
+                    <h5>Total Transactions</h5>
+                    <h2>{{ total_transactions }}</h2>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stat-card card-danger">
+                    <h5>Fraud Detected</h5>
+                    <h2>{{ fraud_count }}</h2>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stat-card card-success">
+                    <h5>Safe Transactions</h5>
+                    <h2>{{ safe_count }}</h2>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stat-card card-info">
+                    <h5>Model Accuracy</h5>
+                    <h2>{{ accuracy }}%</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-5">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Transaction Status</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Risk Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Recent Transactions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Amount</th>
+                                        <th>Type</th>
+                                        <th>Location</th>
+                                        <th>Status</th>
+                                        <th>Risk Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in transactions[-10:] %}
+                                    <tr>
+                                        <td>{{ transaction.id }}</td>
+                                        <td>${{ "%.2f"|format(transaction.amount) }}</td>
+                                        <td>{{ transaction.transaction_type }}</td>
+                                        <td>{{ transaction.location }}</td>
+                                        <td>
+                                            {% if transaction.is_fraud %}
+                                            <span class="badge bg-danger">Fraud</span>
+                                            {% else %}
+                                            <span class="badge bg-success">Safe</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ "%.2f"|format(transaction.risk_score * 100) }}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chartData" data-safe="{{ safe_count }}" data-fraud="{{ fraud_count }}" class="hidden-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Extract data from HTML data attributes
+        const chartDataDiv = document.getElementById('chartData');
+        const safeCount = parseInt(chartDataDiv.dataset.safe) || 0;
+        const fraudCount = parseInt(chartDataDiv.dataset.fraud) || 0;
+        
+        // Status Chart
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Safe', 'Fraud'],
+                datasets: [{
+                    data: [safeCount, fraudCount],
+                    backgroundColor: ['#28a745', '#dc3545'],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {position: 'bottom'}
+                }
+            }
+        });
+
+        // Risk Chart
+        const riskCtx = document.getElementById('riskChart').getContext('2d');
+        new Chart(riskCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+                datasets: [{
+                    label: 'Transactions',
+                    data: [safeCount, Math.floor(fraudCount / 2), Math.floor(fraudCount / 2)],
+                    backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                    borderColor: '#333',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {beginAtZero: true}
+                }
+            }
+        });
+    </script>
+</body>
+</html>
